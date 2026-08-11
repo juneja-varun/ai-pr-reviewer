@@ -1,6 +1,7 @@
 """Orchestrates fetching a PR diff, reviewing it, and posting the result."""
 from __future__ import annotations
 
+from .diff_filter import build_filtered_diff
 from .github_client import GitHubClient
 from .llm_client import review_diff
 
@@ -16,10 +17,15 @@ def run_review(
     model: str = "claude-sonnet-5",
 ) -> str:
     gh = GitHubClient(token=github_token, repo=repo)
-    diff = gh.get_pr_diff(pr_number)
+    files = gh.get_pr_files(pr_number)
+    diff = build_filtered_diff(files)
 
     if not diff.strip():
-        body = f"{MARKER}\n### 🤖 AI Review\n\nNo diff content to review (empty PR)."
+        body = (
+            f"{MARKER}\n### 🤖 AI Review\n\n"
+            "Nothing to review — the PR is empty, or only touches "
+            "generated files (lockfiles, build output, etc)."
+        )
         gh.post_comment(pr_number, body)
         return body
 
