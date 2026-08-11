@@ -1,0 +1,39 @@
+name: "AI PR Reviewer"
+description: "Reviews pull request diffs with Claude and posts findings as a comment"
+author: "Varun Juneja"
+branding:
+  icon: "eye"
+  color: "purple"
+
+inputs:
+  anthropic-api-key:
+    description: "Anthropic API key"
+    required: true
+  github-token:
+    description: "Token used to read the PR diff and post the review comment"
+    required: false
+    default: ${{ github.token }}
+  model:
+    description: "Anthropic model to use"
+    required: false
+    default: "claude-sonnet-5"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install dependencies
+      shell: bash
+      run: pip install -e "${{ github.action_path }}"
+
+    - name: Run review
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+        AI_REVIEW_MODEL: ${{ inputs.model }}
+      run: python -m ai_pr_reviewer
