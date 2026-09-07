@@ -1,9 +1,10 @@
 # AI PR Reviewer
 
-A GitHub Action that reviews pull request diffs with Claude and posts the
-findings as a PR comment — correctness bugs, security issues, obvious
+A GitHub Action that reviews pull request diffs with Claude and posts real
+inline review comments — correctness bugs, security issues, obvious
 performance problems, and missing test coverage, skipping style nits a
-linter already catches.
+linter already catches. Pushing a new commit updates the existing review
+instead of piling up duplicates.
 
 [![CI](https://github.com/juneja-varun/ai-pr-reviewer/actions/workflows/ci.yml/badge.svg)](https://github.com/juneja-varun/ai-pr-reviewer/actions/workflows/ci.yml)
 
@@ -17,16 +18,25 @@ GitHub Action checks out the repo
        │
        ▼
 ai_pr_reviewer fetches the PR's changed files via the GitHub REST API
+(following pagination on large PRs)
        │
        ▼
 Lockfiles and generated files (package-lock.json, dist/*, etc.) are
-filtered out before anything is sent to the model
+filtered out, and the remaining files are split into a few review
+batches if the diff is too large for one request
        │
        ▼
-Remaining diff is sent to Claude with a fixed review-focused system prompt
+Each batch is sent to Claude, which reports findings via a forced tool
+call - {file, line, severity, category, summary} - not freeform text
        │
        ▼
-Structured summary + findings posted as a PR comment
+Findings below the severity threshold are dropped; the rest are split
+into ones that anchor to a real diff line and ones that don't
+       │
+       ▼
+The summary comment is updated in place (or created, on the first run);
+anchorable findings are posted as inline review comments, and any of the
+bot's own stale, unreplied comments from a prior run are cleaned up
 ```
 
 ## Usage
@@ -65,6 +75,7 @@ variables → Actions).
 | `anthropic-api-key` | yes | — | Anthropic API key |
 | `github-token` | no | `${{ github.token }}` | Token used to read the diff and post the comment |
 | `model` | no | `claude-sonnet-5` | Anthropic model to use |
+| `min-severity` | no | `MEDIUM` | Minimum severity to report (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`) |
 
 ## Local development
 
@@ -90,9 +101,13 @@ See [CHANGELOG.md](CHANGELOG.md).
 
 ## Why
 
-Most "AI code review" tools are black boxes. This one is ~200 lines,
-does one thing, and every piece — diff fetching, prompt, comment
-formatting — is readable in a sitting.
+Most "AI code review" tools are black boxes. This one started as a
+~200-line proof of concept and has grown since - structured findings
+via tool-use, real inline comments anchored to diff lines, idempotent
+re-review, smarter handling of large diffs - because those are the
+actual gaps between a demo and something worth trusting on a real PR.
+It's still dependency-light (`requests` only, no framework, no vendored
+LLM SDK) and every module is still small enough to read end to end.
 
 ## License
 
