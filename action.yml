@@ -17,6 +17,10 @@ inputs:
     description: "Anthropic model to use"
     required: false
     default: "claude-sonnet-5"
+  min-severity:
+    description: "Minimum severity to report (LOW, MEDIUM, HIGH, CRITICAL)"
+    required: false
+    default: "MEDIUM"
 
 runs:
   using: "composite"
@@ -36,4 +40,5 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
         AI_REVIEW_MODEL: ${{ inputs.model }}
+        AI_REVIEW_MIN_SEVERITY: ${{ inputs.min-severity }}
       run: python -m ai_pr_reviewer
