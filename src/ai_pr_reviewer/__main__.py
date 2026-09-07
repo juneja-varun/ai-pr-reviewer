@@ -5,6 +5,7 @@ import json
 import os
 import sys
 
+from .formatting import SEVERITY_ORDER
 from .reviewer import run_review
 
 
@@ -31,6 +32,14 @@ def main() -> int:
     anthropic_api_key = os.environ.get("ANTHROPIC_API_KEY")
     repo = os.environ.get("GITHUB_REPOSITORY")
     model = os.environ.get("AI_REVIEW_MODEL", "claude-sonnet-5")
+    min_severity = os.environ.get("AI_REVIEW_MIN_SEVERITY", "MEDIUM").upper()
+
+    if min_severity not in SEVERITY_ORDER:
+        print(
+            f"AI_REVIEW_MIN_SEVERITY must be one of {SEVERITY_ORDER}, got {min_severity!r}",
+            file=sys.stderr,
+        )
+        return 1
 
     missing = [
         name
@@ -53,6 +62,7 @@ def main() -> int:
         repo=repo,
         pr_number=pr_number,
         model=model,
+        min_severity=min_severity,
     )
     print(body)
     return 0
